@@ -32,6 +32,7 @@ public class Main {
 
         if (attempts == maxAttempts) {
             System.out.println("Game Over !");
+            System.out.println("The correct number is : " +num);
         }
 
 input.close();
