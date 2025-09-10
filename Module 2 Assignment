@@ -1,0 +1,94 @@
+public class Bank { 
+
+    private double amount;  
+
+    private double[] interactions;   
+
+    private int count;  
+
+
+    public Bank(int maxTransactions) { 
+
+        amount = 0.0; 
+
+        interactions = new double[maxTransactions]; 
+
+        count = 0; 
+
+    } 
+
+
+    public void deposit(double value) { 
+
+        if (value > 0) { 
+
+            amount += value; 
+
+            interactions[count++] = value;  
+
+        } else { 
+
+            System.out.println("Deposit must be positive."); 
+
+        } 
+
+    } 
+
+    public void withdraw(double value) { 
+
+        if (value > 0 && value <= amount) { 
+
+            amount -= value; 
+
+            interactions[count++] = -value; 
+
+        } else { 
+
+            System.out.println("Invalid withdrawal."); 
+
+        } 
+
+    } 
+
+    public void listInteractions() { 
+
+        System.out.println("Transaction history:"); 
+
+        for (int i = 0; i < count; i++) { 
+
+            System.out.println(interactions[i]); 
+
+        } 
+
+    } 
+
+ 
+
+    public double getBalance() { 
+
+        return amount; 
+
+    } 
+
+ 
+    public static void main(String[] args) { 
+
+        Bank myBank = new Bank(10);   
+
+ 
+
+        myBank.deposit(200); 
+
+        myBank.withdraw(50); 
+
+        myBank.deposit(100); 
+
+ 
+
+        System.out.println("Current balance: " + myBank.getBalance()); 
+
+        myBank.listInteractions(); 
+
+    } 
+
+} 
