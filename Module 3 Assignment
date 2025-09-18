@@ -1,0 +1,161 @@
+//Encapsulation is  bundling fields (attributes) and methods (behavior) together in a class, hiding internal implementation details from outside access.
+
+// Null reference is A variable that points to nothing.&nbsp;
+
+// Inheritance is A class (child) that reuses properties and methods of a parent class (extends).
+
+//Composition is A class that contains other objects (has-a relationship) rather than being a type of them (is-a).
+
+//Example: Car extends Automobile (inheritance) vs Car has an Engine (composition).
+
+
+
+
+
+
+
+
+
+// Automobile.java
+public class Automobile implements Comparable<Automobile> {
+    private int modelYear;
+    private String brand;
+
+    // Constructor
+    public Automobile(int modelYear, String brand) {
+        this.modelYear = modelYear;
+        this.brand = brand;
+    }
+
+    // Getters & Setters
+    public int getModelYear() {
+        return modelYear;
+    }
+
+    public void setModelYear(int modelYear) {
+        this.modelYear = modelYear;
+    }
+
+    public String getBrand() {
+        return brand;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+
+    // Methods
+    public void honk() {
+        System.out.println("Beep beep!");
+    }
+
+    public void accelerate() {
+        System.out.println(brand + " is accelerating.");
+    }
+
+    public void stop() {
+        System.out.println(brand + " has stopped.");
+    }
+
+    public void reverse() {
+        System.out.println(brand + " is reversing.");
+    }
+
+    // Override toString
+    @Override
+    public String toString() {
+        return modelYear + " " + brand;
+    }
+
+    // Override equals
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof Automobile)) return false;
+        Automobile other = (Automobile) obj;
+        return this.modelYear == other.modelYear && this.brand.equals(other.brand);
+    }
+
+    // Implement compareTo (compare by year, then brand)
+    @Override
+    public int compareTo(Automobile other) {
+        int yearCompare = Integer.compare(this.modelYear, other.modelYear);
+        if (yearCompare != 0) {
+            return yearCompare;
+        }
+        return this.brand.compareTo(other.brand);
+    }
+}
+
+----------------------------------------------------------------------------------------------------------------
+
+// Car.java
+public class Car extends Automobile {
+    public Car(int modelYear, String brand) {
+        super(modelYear, brand);
+    }
+
+    @Override
+    public void honk() {
+        System.out.println("Car horn: Honk honk!");
+    }
+}
+
+// SportsCar.java
+public class SportsCar extends Automobile {
+    public SportsCar(int modelYear, String brand) {
+        super(modelYear, brand);
+    }
+
+    @Override
+    public void honk() {
+        System.out.println("SportsCar horn: Vroooom!");
+    }
+
+    @Override
+    public void accelerate() {
+        System.out.println(getBrand() + " is accelerating super fast!");
+    }
+}
+
+// JunkCar.java
+public class JunkCar extends Automobile {
+    public JunkCar(int modelYear, String brand) {
+        super(modelYear, brand);
+    }
+
+    @Override
+    public void honk() {
+        System.out.println("JunkCar horn: *broken sound*");
+    }
+
+    @Override
+    public void accelerate() {
+        System.out.println(getBrand() + " is struggling to move...");
+    }
+}
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+// Tester.java
+public class Tester {
+    public static void main(String[] args) {
+        Automobile[] autos = new Automobile[3];
+
+        autos[0] = new Car(2020, "Toyota");
+        autos[1] = new SportsCar(2022, "Ferrari");
+        autos[2] = new JunkCar(1998, "Oldsmobile");
+
+        for (Automobile auto : autos) {
+            System.out.println(auto);  // calls toString
+            auto.honk();
+            auto.accelerate();
+            auto.reverse();
+            auto.stop();
+            System.out.println("------------------");
+        }
+
+        // Compare cars
+        System.out.println("Comparing Toyota vs Ferrari: " + autos[0].compareTo(autos[1]));
+        System.out.println("Toyota equals Ferrari? " + autos[0].equals(autos[1]));
+    }
+}
+
