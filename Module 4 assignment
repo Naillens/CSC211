@@ -1,3 +1,51 @@
+Examples of Two Access Modifiers
+
+**public:
+
+Accessible from anywhere (same class, same package, different package).
+
+Used when we want a method or variable to be available globally.
+
+Example:
+
+public void printName() { ... }
+A method like this can be accessed from any other class.
+
+**private:
+
+Accessible only within the same class.
+
+Used for encapsulation—keeping data safe and hidden from external modification.
+
+Example:
+
+private int age;
+Keeps the age variable hidden, but we can provide getters/setters to control access.
+
+ Benefits of Inheritance (Analyst & Employee Example from Section 3)
+
+**The Analyst class inherits fields and methods from Employee (like name, salary, getSalary()).
+
+No need to rewrite common code in every employee-related class.
+
+Organization:
+
+**Employee acts as a general template for all job roles.
+
+Analyst specializes the role by adding unique attributes (e.g., specialty).
+
+Polymorphism:
+
+** An Employee variable can hold an Analyst object.
+
+This makes it easy to handle multiple job types with shared behavior in a unified way.
+
+Maintainability:
+
+** If Employee changes (e.g., adding department), all subclasses (like Analyst) automatically inherit the update.
+
+Reduces duplication and errors.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Parent Class
 class Shape {
     private int numberOfSides;
