@@ -1,0 +1,67 @@
+// Parent Class
+class Shape {
+    private int numberOfSides;
+
+    // Constructor
+    public Shape(int numberOfSides) {
+        this.numberOfSides = numberOfSides;
+    }
+
+    // Getter
+    public int getNumberOfSides() {
+        return numberOfSides;
+    }
+
+    // Setter
+    public void setNumberOfSides(int numberOfSides) {
+        this.numberOfSides = numberOfSides;
+    }
+}
+
+// Subclass Circle
+class Circle extends Shape {
+    private double radius;
+
+    public Circle(double radius) {
+        // A circle has 0 sides (by definition)
+        super(0);
+        this.radius = radius;
+    }
+
+    public double getArea() {
+        return Math.PI * radius * radius;
+    }
+}
+
+// Subclass Rectangle
+class Rectangle extends Shape {
+    private double length;
+    private double width;
+
+    public Rectangle(double length, double width) {
+        // A rectangle has 4 sides
+        super(4);
+        this.length = length;
+        this.width = width;
+    }
+
+    public double getArea() {
+        return length * width;
+    }
+}
+
+// test
+public class Main {
+    public static void main(String[] args) {
+        Circle circle = new Circle(5.0);
+        Rectangle rectangle = new Rectangle(4.0, 6.0);
+
+        // Using Shape's getter method via Circle object
+        System.out.println("Circle number of sides: " + circle.getNumberOfSides());
+        System.out.println("Circle area: " + circle.getArea());
+
+        // Using Shape's getter method via Rectangle object
+        System.out.println("Rectangle number of sides: " + rectangle.getNumberOfSides());
+        System.out.println("Rectangle area: " + rectangle.getArea());
+    }
+}
