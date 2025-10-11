@@ -1,0 +1,143 @@
+// File: OrderCalculator.java
+package com.example;
+
+import java.util.List;
+
+public class OrderCalculator {
+
+    private final double discountThreshold;
+    private final double discountPercent;
+
+    public OrderCalculator(double discountThreshold, double discountPercent) {
+        if (discountThreshold < 0 || discountPercent < 0) {
+        throw new IllegalArgumentException("Threshold and percent must be non-negative");
+        }
+        this.discountThreshold = discountThreshold;
+        this.discountPercent = discountPercent;
+    }
+
+    /**  
+     * Calculates total: sum(quantity * unitPrice) across items.  
+     * If sum exceeds discountThreshold, applies discountPercent.  
+     */
+    public double calculateTotal(List<Item> items) {
+        if (items == null) {
+            throw new IllegalArgumentException("Items list must not be null");
+        }
+        double sum = 0.0;
+        for (Item item : items) {
+            if (item == null) {
+                throw new IllegalArgumentException("Item must not be null");
+            }
+            if (item.getQuantity() < 0 || item.getUnitPrice() < 0) {
+                throw new IllegalArgumentException("Quantity and unitPrice must be non-negative");
+            }
+            sum += item.getQuantity() * item.getUnitPrice();
+        }
+        if (sum >= discountThreshold) {
+            sum = sum * (1.0 - discountPercent/100.0);
+        }
+        return sum;
+    }
+
+    public static class Item {
+        private final int quantity;
+        private final double unitPrice;
+
+        public Item(int quantity, double unitPrice) {
+            this.quantity = quantity;
+            this.unitPrice = unitPrice;
+        }
+
+        public int getQuantity() {
+            return quantity;
+        }
+
+        public double getUnitPrice() {
+            return unitPrice;
+        }
+    }
+}
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// File: OrderCalculatorTest.java
+package com.example;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Assertions;
+
+import java.util.Arrays;
+import java.util.Collections;
+
+class OrderCalculatorTest {
+
+    @Test
+    @DisplayName("Calculate total without discount")
+    void testCalculateTotalNoDiscount() {
+        OrderCalculator calc = new OrderCalculator(100.0, 10.0);
+        double result = calc.calculateTotal(
+            Arrays.asList(new OrderCalculator.Item(2, 20.0),
+                          new OrderCalculator.Item(1, 30.0))
+        );
+        Assertions.assertEquals(70.0, result, 0.0001);
+    }
+
+    @Test
+    @DisplayName("Calculate total with discount applied")
+    void testCalculateTotalWithDiscount() {
+        OrderCalculator calc = new OrderCalculator(50.0, 10.0);
+        double result = calc.calculateTotal(
+            Arrays.asList(new OrderCalculator.Item(3, 20.0),
+                          new OrderCalculator.Item(1, 15.0))
+        );
+        // sum = 75.0, threshold 50 => discount 10% => 67.5
+        Assertions.assertEquals(67.5, result, 0.0001);
+    }
+
+    @Test
+    @DisplayName("Edge case: zero items list => total zero")
+    void testCalculateTotalEmptyList() {
+        OrderCalculator calc = new OrderCalculator(1000.0, 20.0);
+        double result = calc.calculateTotal(Collections.emptyList());
+        Assertions.assertEquals(0.0, result, 0.0001);
+    }
+
+    @Test
+    @DisplayName("Invalid inputs: negative quantity or price throws exception")
+    void testInvalidInputThrows() {
+        OrderCalculator calc = new OrderCalculator(100.0, 10.0);
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> calc.calculateTotal(
+                Arrays.asList(new OrderCalculator.Item(-1, 10.0))
+            )
+        );
+    }
+
+    @Test
+    @DisplayName("Constructor invalid parameters throws exception")
+    void testConstructorInvalid() {
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new OrderCalculator(-10.0, 5.0)
+        );
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new OrderCalculator(10.0, -5.0)
+        );
+    }
+}
+-------------------------------------------------------------------------------------------------------------------------------------------
+Each test method is annotated with @Test to indicate it’s a unit test.
+
+@DisplayName is used to give a readable description of the test.
+
+assertEquals(expected, actual, delta) is used for floating-point comparisons (with tolerance).
+
+assertThrows(...) is used to verify that invalid input causes the correct exception to be thrown.
+
+We test normal behavior (no discount), behavior with discount, edge cases (empty list), and invalid inputs (negative values) to ensure robustness.
+
+The tests guide the implementation: for example, we know the constructor should validate inputs (negative threshold or percent) and the method should validate null list, null items, negative values, apply discount logic.
+
+With TDD mindset: first write these failing tests, then implement minimal code to satisfy each test, and finally refactor if needed (for example, extract subtotal logic into a private method).
+
+The test suite is independent, fast (no external dependencies), repeatable, and helps ensure future changes to OrderCalculator don’t break expected behavior.
