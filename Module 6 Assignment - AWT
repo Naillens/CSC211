@@ -1,0 +1,129 @@
+1. What does it mean that Java AWT is platform-dependent? Why do we desire such a trait?
+
+AWT (Abstract Window Toolkit) is called platform-dependent because it relies on the native GUI components of the operating system. When you create a button, text field, or window using AWT, Java maps those components to the corresponding native elements of the host OS (Windows, macOS, Linux, etc.).
+This ensures that applications look and behave like other native applications on that system. The advantage is a consistent, native appearance that blends with the user’s environment, though it can also cause minor visual or behavioral differences between platforms.
+
+ 2. What does it mean that Java runs on a virtual machine? How is that beneficial?
+
+Java runs on the Java Virtual Machine (JVM), which acts as an interpreter between Java bytecode and the underlying operating system.
+This makes Java platform independent—the same program can run on any system with a JVM, regardless of the OS or hardware.
+The main benefits include:
+
+Portability: “Write once, run anywhere.”
+
+Security: The JVM isolates Java code from the host system.
+
+Automatic memory management: The JVM handles garbage collection.
+
+Performance optimization: The JVM uses Just-In-Time (JIT) compilation for speed.
+
+ 3. In every hierarchy map of Java, Object is always at the top. Why is this so?
+
+In Java, the Object class is the root superclass of all other classes. Every class in Java directly or indirectly inherits from Object.
+This ensures that every object shares a common set of basic methods, such as:
+
+- toString() — returns a string representation of the object
+
+- equals() — compares two objects for equality
+
+- hashCode() — returns the object’s hash value
+
+clone() — creates a copy of the object
+This uniform hierarchy promotes polymorphism, consistency, and reusability across all Java programs.
+
+ 4. What is a Java package?
+
+A package in Java is a namespace that organizes related classes, interfaces, and sub-packages together.
+It helps:
+
+- Avoid naming conflicts
+
+- Improve code maintainability
+
+- Control access through visibility modifiers (public, protected, etc.)
+
+
+5. What is an event in Java?
+
+An event in Java is an action or occurrence that a program can respond to, such as:
+
+- Clicking a button
+
+- Typing in a text field
+
+- Closing a window
+
+AWT and Swing use the event delegation model, where an event source (like a button) triggers an event handled by an event listener (like an ActionListener).
+
+----------------------------------------------------------------------------------------------------------------------------
+ 6. Java AWT Program — Employee Information Form
+
+// File: EmployeeForm.java
+import java.awt.*;
+import java.awt.event.*;
+
+public class EmployeeForm extends Frame implements ActionListener {
+    // Declare components
+    Label nameLabel, idLabel, deptLabel;
+    TextField nameField, idField, deptField;
+    Button submitButton;
+    TextArea outputArea;
+
+    // Constructor
+    EmployeeForm() {
+        // Create components
+        nameLabel = new Label("Name:");
+        idLabel = new Label("Employee ID:");
+        deptLabel = new Label("Department:");
+
+        nameField = new TextField();
+        idField = new TextField();
+        deptField = new TextField();
+
+        submitButton = new Button("Submit");
+        outputArea = new TextArea("", 5, 40, TextArea.SCROLLBARS_VERTICAL_ONLY);
+
+        // Set layout
+        setLayout(new GridLayout(5, 2, 10, 10));
+
+        // Add components
+        add(nameLabel); add(nameField);
+        add(idLabel); add(idField);
+        add(deptLabel); add(deptField);
+        add(new Label("")); add(submitButton);
+        add(new Label("Employee Details:")); add(outputArea);
+
+        // Add button listener
+        submitButton.addActionListener(this);
+
+        // Frame settings
+        setTitle("Employee Information Form");
+        setSize(400, 300);
+        setVisible(true);
+
+        // Close window action
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                dispose();
+            }
+        });
+    }
+
+    // Action event handler
+    public void actionPerformed(ActionEvent e) {
+        String name = nameField.getText();
+        String id = idField.getText();
+        String dept = deptField.getText();
+
+        outputArea.setText("Employee Information:\n");
+        outputArea.append("Name: " + name + "\n");
+        outputArea.append("Employee ID: " + id + "\n");
+        outputArea.append("Department: " + dept + "\n");
+    }
+
+    // Main method
+    public static void main(String[] args) {
+        new EmployeeForm();
+    }
+}
+
