@@ -1,0 +1,176 @@
+import java.util.*;
+
+
+class Style {
+    private final String color;
+    private final int strokeWidth;
+
+    public Style(String color, int strokeWidth) {
+        this.color = color;
+        this.strokeWidth = strokeWidth;
+    }
+
+    public String color() { return color; }
+    public int strokeWidth() { return strokeWidth; }
+
+    @Override
+    public String toString() {
+        return "Style{color='" + color + "', strokeWidth=" + strokeWidth + "}";
+    }
+}
+
+--------------------------------------------------------------------------------------------------------
+abstract class Shape {
+    private final String name;
+    // Composition: every Shape contains (has-a) Style
+    private final Style style;
+
+    protected Shape(String name, Style style) {
+        this.name = name;
+        this.style = style;
+    }
+
+    public String getName() { return name; }
+    public Style getStyle() { return style; }
+
+    /** Polymorphic operations */
+    public abstract double area();
+    public abstract void draw();
+
+    @Override
+    public String toString() {
+        return getName() + " " + getStyle();
+    }
+}
+
+--------------------------------------------------------------------------------------------
+class Circle extends Shape {
+    private final double radius;
+
+    public Circle(double radius, Style style) {
+        super("Circle", style);
+        this.radius = radius;
+    }
+
+    @Override
+    public double area() {
+        return Math.PI * radius * radius;
+    }
+
+    @Override
+    public void draw() {
+        System.out.println("Drawing " + this + " with radius=" + radius);
+    }
+}
+
+------------------------------------------------------------------------------------------------------
+class Rectangle extends Shape {
+    private final double width;
+    private final double height;
+
+    public Rectangle(double width, double height, Style style) {
+        super("Rectangle", style);
+        this.width = width;
+        this.height = height;
+    }
+
+    @Override
+    public double area() {
+        return width * height;
+    }
+
+    @Override
+    public void draw() {
+        System.out.println("Drawing " + this + " with width=" + width + ", height=" + height);
+    }
+}
+
+-----------------------------------------------------------------------------------------------------------------------
+class Triangle extends Shape {
+    private final double base;
+    private final double height;
+
+    public Triangle(double base, double height, Style style) {
+        super("Triangle", style);
+        this.base = base;
+        this.height = height;
+    }
+
+    @Override
+    public double area() {
+        return 0.5 * base * height;
+    }
+
+    @Override
+    public void draw() {
+        System.out.println("Drawing " + this + " with base=" + base + ", height=" + height);
+    }
+}
+
+-------------------------------------------------------------------------------------------------------------------------------
+class Scene {
+    private final List<Shape> shapes = new ArrayList<>();
+
+    public void add(Shape s) { shapes.add(s); }
+
+    public void renderAll() {
+        System.out.println("=== Rendering Scene ===");
+        for (Shape s : shapes) {
+            // Polymorphism: each concrete shape's draw() runs here
+            s.draw();
+        }
+    }
+
+    public double totalArea() {
+        double sum = 0.0;
+        for (Shape s : shapes) {
+            // Polymorphism: dispatches to each shape's area()
+            sum += s.area();
+        }
+        return sum;
+    }
+
+    public void describe() {
+        System.out.println("Scene contains " + shapes.size() + " shapes:");
+        for (Shape s : shapes) {
+            System.out.println(" - " + s.getName() + " with " + s.getStyle());
+        }
+    }
+}
+
+------------------------------------------------------------------------------------------------
+public class Main {
+    public static void main(String[] args) {
+        // Styles (composition objects)
+        Style thinBlue = new Style("blue", 1);
+        Style boldRed  = new Style("red", 3);
+        Style green    = new Style("green", 2);
+
+        // Shapes (inheritance & polymorphism targets)
+        Shape c1 = new Circle(3.0, thinBlue);
+        Shape r1 = new Rectangle(4.0, 2.5, boldRed);
+        Shape t1 = new Triangle(5.0, 4.0, green);
+
+        // Scene (composition: Scene owns a list of Shapes)
+        Scene scene = new Scene();
+        scene.add(c1);
+        scene.add(r1);
+        scene.add(t1);
+
+        // Show the idea
+        scene.describe();
+        scene.renderAll();
+
+        double total = scene.totalArea();
+        System.out.printf("Total area = %.2f%n", total);
+
+        // Extra: polymorphic variable
+        printArea("Polymorphic single call (Circle): ", c1);
+        printArea("Polymorphic single call (Rectangle): ", r1);
+        printArea("Polymorphic single call (Triangle): ", t1);
+    }
+
+    private static void printArea(String label, Shape s) {
+        System.out.printf("%s%.2f%n", label, s.area());
+    }
+}
