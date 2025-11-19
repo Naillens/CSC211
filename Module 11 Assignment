@@ -1,0 +1,39 @@
+Java: Lambdas and Streams — Study Notes
+1. Introduction to Functional Programming in Java
+• Functional programming focuses on writing functions that avoid mutable state and side effects.
+• Java introduced functional programming features in Java 8 (lambdas, streams, functional interfaces).
+• Benefits: cleaner code, easier parallelization, expressive data transformations.
+2. Lambdas in Java
+• A lambda expression is a short block of code that takes parameters and returns a value.
+• Syntax: (parameters) -> expression or (parameters) -> { statements }
+• Useful for simplifying anonymous classes.
+3. Functional Interfaces
+• A functional interface contains exactly one abstract method.
+• Examples: Runnable, Callable, Comparator, Predicate<T>, Function<T, R>, Consumer<T>, Supplier<T>.
+• Annotated with @FunctionalInterface.
+4. Method References
+• Shorter syntax for calling existing methods.
+• Types: Static method reference (Class::method), instance method reference (instance::method), constructor reference (Class::new).
+5. Streams Overview
+• A Stream represents a pipeline of data transformations.
+• Streams do not store data; they operate on collections/arrays.
+• Types: Sequential streams and parallel streams.
+6. Stream Operations
+• Intermediate operations: filter(), map(), flatMap(), sorted(), distinct(). They are lazy.
+• Terminal operations: forEach(), reduce(), collect(), count(), findFirst(). They trigger execution.
+• Streams support chaining for elegant pipelines.
+7. Collectors and the Collect Operation
+• Collectors.toList(), toSet(), toMap() collect stream elements.
+• Grouping and partitioning: groupingBy(), partitioningBy().
+• Collectors.reducing() supports custom reductions.
+8. Optional Class
+• Optional prevents NullPointerExceptions.
+• Useful methods: isPresent(), orElse(), orElseGet(), map(), flatMap().
+9. Parallel Streams
+• Parallel streams divide tasks across multiple threads automatically.
+• Can improve performance for large datasets but must avoid shared mutable state.
+• Use parallel() carefully—debugging is harder.
+10. Best Practices
+• Prefer streams for transformations, not for complex control flow.
+• Avoid modifying external state inside lambdas.
+• Choose readability over overly compact lambda logic.
