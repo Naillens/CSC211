@@ -1,0 +1,60 @@
+A generic in programming (especially in Java) allows you to write classes, interfaces, and methods that can operate on different data types without losing type safety.
+
+Example:
+
+ArrayList<Integer> nums = new ArrayList<>();
+ArrayList<String> words = new ArrayList<>();
+
+
+ArrayList is defined using a generic type <T>, meaning it can store any type you specify at compile time.
+Benefits of generics:
+
+Type safety (prevents storing the wrong type)
+
+No need for type casting
+
+Reusable code that works with multiple types
+
+In short: Generics let you create flexible, reusable code that remains strictly typed.
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+2. In which situation/set-up is recursion best avoided?
+
+Recursion should generally be avoided when:
+
+The problem requires very deep or large recursive calls
+
+Risk of stack overflow if the recursion goes too deep.
+
+A simple iterative solution exists
+
+Loops are often faster and more memory-efficient.
+
+Performance and efficiency are critical
+
+Recursive calls add overhead due to repeated function calls.
+
+Example of where recursion is NOT ideal:
+
+factorial(50000)  // will likely overflow stack
+
+
+In these cases, an iterative approach is safer and more efficient.
+--------------------------------------------------------------------------------------------------
+
+3. When would we prefer throw/throws over try/catch?
+
+We use throw/throws instead of try/catch when:
+
+We don’t want to handle the exception in the current method
+
+We want to let the calling method decide how to handle the error
+
+We want to propagate the exception up the stack
+
+Example:
+
+public void readFile() throws IOException {
+    FileReader file = new FileReader("data.txt");  // may throw error
+}
