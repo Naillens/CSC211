@@ -1,0 +1,920 @@
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+/**
+ * Main demo class for the E-commerce platform prototype.
+ * Contains a sample in-memory product catalog, a customer with a cart,
+ * and an order workflow that uses lambdas and streams.
+ */
+public class ECommerceApp {
+
+    public static void main(String[] args) {
+        // Create some sample products
+        List<Product> catalog = new ArrayList<>();
+        catalog.add(new Electronics(1, "Laptop", 899.99, 24));
+        catalog.add(new Electronics(2, "Headphones", 99.99, 12));
+        catalog.add(new Clothing(3, "T-Shirt", 19.99, "L", "Cotton"));
+        catalog.add(new Clothing(4, "Jeans", 49.99, "M", "Denim"));
+        catalog.add(new Grocery(5, "Milk", 3.49, LocalDate.now().plusDays(7)));
+        catalog.add(new Grocery(6, "Apples", 4.99, LocalDate.now().plusDays(10)));
+
+        // Create a customer and an admin
+        Customer customer = new Customer(1, "John Doe", "john@example.com");
+        Admin admin = new Admin(2, "Admin User", "admin@example.com");
+
+        // Customer adds items to cart
+        customer.getCart().addProduct(catalog.get(0), 1); // Laptop
+        customer.getCart().addProduct(catalog.get(2), 2); // T-Shirts
+        customer.getCart().addProduct(catalog.get(5), 1); // Apples
+
+        // Show catalog with filtering + sorting via streams & lambdas
+        System.out.println("=== Full Catalog (sorted by price ascending) ===");
+        ProductService.printProductsSortedByPrice(catalog, true);
+
+        System.out.println("\n=== Electronics Only (filtered with lambda) ===");
+        List<Product> electronics = ProductService.filterProducts(
+                catalog,
+                p -> p instanceof Electronics // lambda as Predicate<Product>
+        );
+        ProductService.printProducts(electronics);
+
+        System.out.println("\n=== Search for products containing 'ap' (case-insensitive) ===");
+        List<Product> searchResults = ProductService.searchByName(catalog, "ap");
+        ProductService.printProducts(searchResults);
+
+        // Define lambdas for pricing logic
+        Function<Double, Double> discountLambda = subtotal -> {
+            // 10% discount for orders over $200
+            if (subtotal > 200) {
+                return subtotal * 0.90;
+            }
+            return subtotal;
+        };
+
+        Function<Double, Double> taxLambda = amount -> amount * 0.08; // 8% tax
+
+        Function<Double, Double> shippingLambda = subtotal -> {
+            // Free shipping for orders over $100, otherwise $7.99
+            if (subtotal > 100) {
+                return 0.0;
+            }
+            return 7.99;
+        };
+
+        // Create order from cart
+        Order order = new Order(1, customer, new ArrayList<>(customer.getCart().getItems()));
+
+        // Calculate totals using lambdas
+        double subtotal = order.calculateSubtotal();
+        double discounted = order.applyDiscount(discountLambda);
+        double tax = order.applyTax(taxLambda, discounted);
+        double shipping = order.calculateShipping(shippingLambda, discounted);
+        double grandTotal = discounted + tax + shipping;
+
+        System.out.println("\n=== Order Summary ===");
+        System.out.printf("Subtotal: $%.2f%n", subtotal);
+        System.out.printf("After Discount: $%.2f%n", discounted);
+        System.out.printf("Tax: $%.2f%n", tax);
+        System.out.printf("Shipping: $%.2f%n", shipping);
+        System.out.printf("Grand Total: $%.2f%n", grandTotal);
+
+        // Add order to customer's history
+        customer.addOrder(order);
+
+        System.out.println("\n=== Orders for Customer (sorted by date desc) ===");
+        List<Order> sortedOrders = OrderService.sortOrdersByDate(customer.getOrders(), false);
+        OrderService.printOrders(sortedOrders);
+
+        // Admin: view all orders over a certain amount using streams
+        System.out.println("\n=== Admin View: Orders over $100 ===");
+        List<Order> highValueOrders = OrderService.filterOrdersByTotal(
+                customer.getOrders(),
+                100.0,
+                discountLambda,
+                taxLambda,
+                shippingLambda
+        );
+        OrderService.printOrders(highValueOrders);
+    }
+}
+
+/* ================================
+ *        DOMAIN CLASSES
+ * ================================ */
+
+/**
+ * Base class for all products.
+ */
+abstract class Product {
+    private final int id;
+    private final String name;
+    private final double price;
+
+    protected Product(int id, String name, double price) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+    }
+
+    public int getId() { return id; }
+
+    public String getName() { return name; }
+
+    public double getPrice() { return price; }
+
+    public abstract String getCategory(); // implemented by subclasses
+
+    @Override
+    public String toString() {
+        return String.format("[%s] #%d %s - $%.2f", getCategory(), id, name, price);
+    }
+}
+
+/**
+ * Electronics product with a warranty period.
+ */
+class Electronics extends Product {
+    private final int warrantyMonths;
+
+    public Electronics(int id, String name, double price, int warrantyMonths) {
+        super(id, name, price);
+        this.warrantyMonths = warrantyMonths;
+    }
+
+    public int getWarrantyMonths() { return warrantyMonths; }
+
+    @Override
+    public String getCategory() {
+        return "Electronics";
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + String.format(" (Warranty: %d months)", warrantyMonths);
+    }
+}
+
+/**
+ * Clothing product with size and material.
+ */
+class Clothing extends Product {
+    private final String size;
+    private final String material;
+
+    public Clothing(int id, String name, double price, String size, String material) {
+        super(id, name, price);
+        this.size = size;
+        this.material = material;
+    }
+
+    public String getSize() { return size; }
+
+    public String getMaterial() { return material; }
+
+    @Override
+    public String getCategory() {
+        return "Clothing";
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + String.format(" (Size: %s, Material: %s)", size, material);
+    }
+}
+
+/**
+ * Grocery product with an expiration date.
+ */
+class Grocery extends Product {
+    private final LocalDate expirationDate;
+
+    public Grocery(int id, String name, double price, LocalDate expirationDate) {
+        super(id, name, price);
+        this.expirationDate = expirationDate;
+    }
+
+    public LocalDate getExpirationDate() { return expirationDate; }
+
+    @Override
+    public String getCategory() {
+        return "Grocery";
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + String.format(" (Expires: %s)", expirationDate);
+    }
+}
+
+/**
+ * Base class for users in the system.
+ */
+abstract class User {
+    private final int id;
+    private final String name;
+    private final String email;
+
+    protected User(int id, String name, String email) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+    }
+
+    public int getId() { return id; }
+
+    public String getName() { return name; }
+
+    public String getEmail() { return email; }
+
+    @Override
+    public String toString() {
+        return String.format("[%s] #%d %s (%s)", getRole(), id, name, email);
+    }
+
+    public abstract String getRole();
+}
+
+/**
+ * Customer user: has a shopping cart and order history.
+ */
+class Customer extends User {
+    private final Cart cart;
+    private final List<Order> orders;
+
+    public Customer(int id, String name, String email) {
+        super(id, name, email);
+        this.cart = new Cart();
+        this.orders = new ArrayList<>();
+    }
+
+    public Cart getCart() { return cart; }
+
+    public List<Order> getOrders() { return orders; }
+
+    public void addOrder(Order order) {
+        this.orders.add(order);
+    }
+
+    @Override
+    public String getRole() {
+        return "Customer";
+    }
+}
+
+/**
+ * Admin user: could be extended with management features.
+ */
+class Admin extends User {
+
+    public Admin(int id, String name, String email) {
+        super(id, name, email);
+    }
+
+    @Override
+    public String getRole() {
+        return "Admin";
+    }
+}
+
+/**
+ * Represents a cart item with product + quantity.
+ */
+class CartItem {
+    private final Product product;
+    private int quantity;
+
+    public CartItem(Product product, int quantity) {
+        this.product = product;
+        this.quantity = quantity;
+    }
+
+    public Product getProduct() { return product; }
+
+    public int getQuantity() { return quantity; }
+
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
+
+    public double getLineTotal() {
+        return product.getPrice() * quantity;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s x%d = $%.2f", product.getName(), quantity, getLineTotal());
+    }
+}
+
+/**
+ * Shopping cart holding a list of CartItem objects.
+ */
+class Cart {
+    private final List<CartItem> items = new ArrayList<>();
+
+    /**
+     * Adds a product to the cart. If it already exists, increments quantity.
+     */
+    public void addProduct(Product product, int quantity) {
+        Optional<CartItem> existing = items.stream()
+                .filter(ci -> ci.getProduct().getId() == product.getId())
+                .findFirst();
+
+        if (existing.isPresent()) {
+            CartItem item = existing.get();
+            item.setQuantity(item.getQuantity() + quantity);
+        } else {
+            items.add(new CartItem(product, quantity));
+        }
+    }
+
+    /**
+     * Removes a product from the cart by product ID.
+     */
+    public void removeProductById(int productId) {
+        items.removeIf(ci -> ci.getProduct().getId() == productId);
+    }
+
+    public List<CartItem> getItems() { return items; }
+
+    /**
+     * Calculates subtotal using a lambda + stream.
+     */
+    public double calculateSubtotal() {
+        return items.stream()
+                .mapToDouble(CartItem::getLineTotal)
+                .sum();
+    }
+
+    @Override
+    public String toString() {
+        return items.stream()
+                .map(CartItem::toString)
+                .collect(Collectors.joining("\n"));
+    }
+}
+
+/**
+ * Order class: represents a customer's order with items and date.
+ */
+class Order {
+    private final int id;
+    private final Customer customer;
+    private final List<CartItem> items;
+    private final LocalDateTime createdAt;
+
+    public Order(int id, Customer customer, List<CartItem> items) {
+        this.id = id;
+        this.customer = customer;
+        this.items = items;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public int getId() { return id; }
+
+    public Customer getCustomer() { return customer; }
+
+    public List<CartItem> getItems() { return items; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+
+    /**
+     * Calculates the subtotal of the order by summing line totals.
+     */
+    public double calculateSubtotal() {
+        return items.stream()
+                .mapToDouble(CartItem::getLineTotal)
+                .sum();
+    }
+
+    /**
+     * Applies a discount lambda to a subtotal and returns the discounted amount.
+     */
+    public double applyDiscount(Function<Double, Double> discountLambda) {
+        double subtotal = calculateSubtotal();
+        return discountLambda.apply(subtotal);
+    }
+
+    /**
+     * Applies a tax lambda to a given amount (usually discounted subtotal).
+     */
+    public double applyTax(Function<Double, Double> taxLambda, double taxableAmount) {
+        return taxLambda.apply(taxableAmount);
+    }
+
+    /**
+     * Calculates shipping using a lambda that takes subtotal or discounted subtotal.
+     */
+    public double calculateShipping(Function<Double, Double> shippingLambda, double baseAmount) {
+        return shippingLambda.apply(baseAmount);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Order #%d for %s on %s (Items: %d)",
+                id, customer.getName(), createdAt, items.size());
+    }
+}
+
+/* ================================
+ *       SERVICE / UTILITY CLASSES
+ * ================================ */
+
+/**
+ * ProductService provides filtering, searching, and sorting using
+ * lambdas and streams.
+ */
+class ProductService {
+
+    /**
+     * Filters products based on a Predicate lambda.
+     */
+    public static List<Product> filterProducts(List<Product> products,
+                                              Predicate<Product> filter) {
+        return products.stream()
+                .filter(filter)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Searches products by name containing a keyword (case-insensitive).
+     */
+    public static List<Product> searchByName(List<Product> products, String keyword) {
+        String lower = keyword.toLowerCase();
+        return products.stream()
+                .filter(p -> p.getName().toLowerCase().contains(lower))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns products sorted by price.
+     *
+     * @param ascending true for low-to-high, false for high-to-low
+     */
+    public static List<Product> sortByPrice(List<Product> products, boolean ascending) {
+        return products.stream()
+                .sorted(Comparator.comparingDouble(Product::getPrice)
+                        .thenComparing(Product::getName)
+                        .reversed() // start reversed, then flip if needed
+                )
+                .sorted(ascending
+                        ? Comparator.comparingDouble(Product::getPrice)
+                        : Comparator.comparingDouble(Product::getPrice).reversed())
+                .collect(Collectors.toList());
+    }
+
+    public static void printProducts(List<Product> products) {
+        products.forEach(System.out::println);
+    }
+
+    public static void printProductsSortedByPrice(List<Product> products, boolean ascending) {
+        sortByPrice(products, ascending).forEach(System.out::println);
+    }
+}
+
+/**
+ * OrderService provides sorting and filtering of orders using streams.
+ */
+class OrderService {
+
+    /**
+     * Sort orders by creation date.
+     *
+     * @param ascending true for oldest first, false for newest first
+     */
+    public static List<Order> sortOrdersByDate(List<Order> orders, boolean ascending) {
+        Comparator<Order> comparator = Comparator.comparing(Order::getCreatedAt);
+        if (!ascending) {
+            comparator = comparator.reversed();
+        }
+        return orders.stream()
+                .sorted(comparator)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Filters orders whose grand total (after discount + tax + shipping)
+     * is greater than or equal to a given threshold.
+     */
+    public static List<Order> filterOrdersByTotal(
+            List<Order> orders,
+            double minTotal,
+            Function<Double, Double> discountLambda,
+            Function<Double, Double> taxLambda,
+            Function<Double, Double> shippingLambda) {
+
+        return orders.stream()
+                .filter(order -> {
+                    double subtotal = order.calculateSubtotal();
+                    double discounted = order.applyDiscount(discountLambda);
+                    double tax = order.applyTax(taxLambda, discounted);
+                    double shipping = order.calculateShipping(shippingLambda, discounted);
+                    double grandTotal = discounted + tax + shipping;
+                    return grandTotal >= minTotal;
+                })
+                .collect(Collectors.toList());
+    }
+
+    public static void printOrders(List<Order> orders) {
+        orders.forEach(o -> {
+            System.out.println(o);
+            System.out.printf("  Subtotal: $%.2f%n", o.calculateSubtotal());
+        });
+    }
+}
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Overview
+
+This project is a console-based Java prototype of an e-commerce platform designed to simulate the core functionality of an online shopping system. Although simplified, the program closely models how real-world e-commerce systems are structured by separating responsibilities into domain objects, service utilities, and business logic.
+
+The application supports:
+
+Managing different types of products
+
+Handling users with different roles (customers and admins)
+
+Managing shopping carts
+
+Processing orders
+
+Applying pricing rules dynamically using lambda expressions
+
+Performing filtering, searching, sorting, and aggregation using Java Streams
+
+From a software engineering perspective, this project demonstrates object-oriented programming (OOP) principles alongside modern Java functional programming features, making it a strong example of clean, modular, and extensible design.
+
+Core Programming Concepts Demonstrated
+
+This project intentionally combines traditional OOP with Java 8+ functional features:
+
+Inheritance – Shared behavior across product types and users
+
+Polymorphism – Treating different product types uniformly
+
+Abstraction – Using abstract base classes to enforce structure
+
+Composition – Building complex objects from simpler ones
+
+Encapsulation – Protecting internal data using private fields
+
+Lambda Expressions – Passing behavior as parameters
+
+Streams API – Declarative data processing without explicit loops
+
+1. Product Hierarchy (Inheritance & Polymorphism)
+Base Class: Product
+
+The Product class is declared as abstract, meaning it cannot be instantiated directly. This enforces the idea that every product must belong to a specific category.
+
+All products share:
+
+id – unique identifier
+
+name – product name
+
+price – base price
+
+getCategory() – abstract method that subclasses must implement
+
+abstract class Product {
+    private final int id;
+    private final String name;
+    private final double price;
+
+    public abstract String getCategory();
+}
+
+
+Why is abstraction used
+
+Prevents creation of generic “undefined” products
+
+Forces subclasses to define their category
+
+Encourages consistent behavior across product types
+
+Subclasses of Product
+Electronics
+
+Adds:
+
+warrantyMonths
+
+This model's real electronics where warranty duration is an important attribute.
+
+Clothing
+
+Adds:
+
+size
+
+material
+
+This reflects apparel-specific data that does not apply to other products.
+
+Grocery
+
+Adds:
+
+expirationDate (using LocalDate)
+
+This demonstrates integration of Java’s date/time API and models perishable goods.
+
+Polymorphism in Action
+
+All products are stored in:
+
+List<Product> catalog
+
+
+Even though the list holds different subclasses, Java treats them uniformly as Product objects.
+At runtime, the correct getCategory() and toString() methods are invoked automatically.
+
+2. User Hierarchy (Inheritance & Role Separation)
+Base Class: User
+
+The User class defines shared user attributes:
+
+id
+
+name
+
+email
+
+It also includes an abstract method:
+
+public abstract String getRole();
+
+
+This enforces role identification for all user types.
+
+Customer
+
+A Customer extends User and adds:
+
+A Cart (composition)
+
+A list of Order objects (order history)
+
+Customers are responsible for shopping behavior, not system administration.
+
+Admin
+
+An Admin extends User but currently contains no additional fields.
+
+This is intentional design:
+
+Allows easy future expansion (inventory control, reporting, user management)
+
+Demonstrates how inheritance supports scalability
+
+3. Shopping Cart System (Composition)
+CartItem
+
+A CartItem represents:
+
+A Product
+
+A quantity
+
+It includes:
+
+public double getLineTotal() {
+    return product.getPrice() * quantity;
+}
+
+
+This separates pricing logic from the cart itself.
+
+Cart
+
+The Cart class contains:
+
+List<CartItem> items
+
+
+This is an example of composition:
+
+A cart has cart items
+
+A cart item has a product
+
+Key Features
+
+Add products
+
+Merge quantities when the same product is added again
+
+Remove products by ID
+
+Calculate subtotal using streams
+
+items.stream()
+     .mapToDouble(CartItem::getLineTotal)
+     .sum();
+
+
+This avoids manual loops and improves readability.
+
+4. Orders (Business Logic & Functional Design)
+
+The Order class represents a finalized purchase.
+
+Order Data
+
+Order ID
+
+Customer reference
+
+List of cart items
+
+Timestamp (LocalDateTime)
+
+Pricing via Lambdas
+
+Instead of hard-coding pricing rules, the order accepts functions:
+
+public double applyDiscount(Function<Double, Double> discountLambda)
+
+
+This allows pricing logic to be:
+
+Reusable
+
+Replaceable
+
+Testable
+
+Easily adjustable for promotions or policies
+
+5. Lambda Expressions (Functional Programming)
+Discount Lambda
+subtotal -> subtotal > 200 ? subtotal * 0.90 : subtotal
+
+
+Applies a 10% discount for large orders
+
+Tax Lambda
+amount -> amount * 0.08
+
+
+Fixed 8% tax rate
+
+Shipping Lambda
+subtotal -> subtotal > 100 ? 0.0 : 7.99
+
+
+Free shipping threshold
+
+Filtering Lambda
+p -> p instanceof Electronics
+
+
+This allows business rules to be defined outside of core classes, improving flexibility.
+
+6. Streams API Usage
+
+Streams are used extensively to process collections declaratively.
+
+Filtering Products
+products.stream()
+        .filter(p -> p.getCategory().equals("Electronics"))
+
+Searching by Keyword
+products.stream()
+        .filter(p -> p.getName().toLowerCase().contains(keyword))
+
+Sorting by Price
+products.stream()
+        .sorted(Comparator.comparingDouble(Product::getPrice))
+
+Calculating Totals
+items.stream()
+     .mapToDouble(CartItem::getLineTotal)
+     .sum();
+
+
+Advantages of Streams
+
+Less boilerplate
+
+More readable
+
+Reduced error risk
+
+Encourages functional thinking
+
+7. Service / Utility Classes
+ProductService
+
+Handles:
+
+Filtering
+
+Searching
+
+Sorting
+
+Printing product lists
+
+Keeps logic out of domain classes, improving separation of concerns.
+
+OrderService
+
+Handles:
+
+Sorting orders by date
+
+Filtering orders by computed total
+
+This design avoids bloating the Order class with reporting logic.
+
+8. Additional Features
+
+The application supports:
+
+Keyword search
+
+Category filtering
+
+Ascending/descending sorting
+
+Order history tracking
+
+Admin-style order analysis
+
+Detailed order summaries:
+
+Subtotal
+
+Discounted total
+
+Tax
+
+Shipping
+
+Grand total
+
+9. Project Structure
+ECommerceApp.java
+|
+|-- Product (abstract)
+|     |-- Electronics
+|     |-- Clothing
+|     |-- Grocery
+|
+|-- User (abstract)
+|     |-- Customer
+|     |-- Admin
+|
+|-- CartItem
+|-- Cart
+|-- Order
+|
+|-- ProductService
+|-- OrderService
+
+
+This structure mirrors real enterprise Java applications, even though everything is in one file for simplicity.
+
+10. How to Run the Program
+Compile
+javac ECommerceApp.java
+
+Run
+java ECommerceApp
+
+Output Demonstrates
+
+Product catalog display
+
+Sorted and filtered views
+
+Search results
+
+Cart contents
+
+Order pricing breakdown
+
+Order history
+
+Admin filtering logic
+
+Conclusion
+
+This project successfully demonstrates how object-oriented design and functional programming can coexist in Java. By combining inheritance, composition, lambdas, and streams, the application achieves:
+
+Clean separation of responsibilities
+
+Flexible business rules
+
+Readable and maintainable code
+
+Strong foundation for real-world expansion
+
+It serves as an excellent learning example for Java OOP, Streams API, and lambda expressions in a practical, real-world context.
